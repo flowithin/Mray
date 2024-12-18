@@ -1,5 +1,5 @@
 CC := clang++
-objects = ray.o
+objects := main.o
 testfile := test.o
 CXXFLAGS := -stdlib=libc++ -std=c++17
 all: $(objects)

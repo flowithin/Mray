@@ -17,9 +17,11 @@ public:
   vec3& operator*=(const vec3 v2) {e[0] *= v2.e[0]; e[1] *= v2.e[1]; e[2] *= v2.e[2]; return *this;}
 };
   vec3 operator-(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] - v2.x(), v1.e[1] - v2.y() , v2.e[2] - v2.z());}
-  vec3 operator+(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] + v2.x(), v1.e[1] + v2.y(), v2.e[2] + v2.z());}
-  vec3 operator*(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] * v2.x(), v1.e[1] * v2.y(), v1.e[2] * v2.z());}
-  vec3 operator/(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] / v2.x(), v1.e[1] / v2.y(), v1.e[2] / v2.z());}
+  vec3 operator+(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] + v2.x(), v1.e[1] + v2.y(), v1.e[2] + v2.z());}
+  /*vec3 operator*(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] * v2.x(), v1.e[1] * v2.y(), v1.e[2] * v2.z());}*/
+  vec3 operator*(const double scaler, const vec3 v2) { return vec3(scaler * v2.x(), scaler * v2.y(), scaler * v2.z());}
+  /*vec3 operator/(const vec3 v1, const vec3 v2) { return vec3(v1.e[0] / v2.x(), v1.e[1] / v2.y(), v1.e[2] / v2.z());}*/
+  vec3 operator/(const vec3 v1, const double scaler) { return (1/scaler)*v1;}
 
 inline double dot(const vec3& u, const vec3& v) {
     return u.e[0] * v.e[0]
