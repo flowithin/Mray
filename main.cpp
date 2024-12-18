@@ -3,11 +3,14 @@
 #include <complex>
 #include <cstdio>
 #include<iostream>
+#include <limits>
 #include <string>
 #include <strstream>
 #include <vector>
 #include <fstream>
 #include "vec3.h"
+#include "rand.h"
+
 using color = vec3;
 using point3 = vec3;
 void write_color(std::ostream& out, const color& pixel_color){
@@ -20,9 +23,41 @@ void write_color(std::ostream& out, const color& pixel_color){
   out << rbyte << " " << gbyte << " " << bbyte << '\n';
 }
 
+class Ray{
+public:
+  vec3 dir;
+  double t;
+  color ray_color;
+  Ray(vec3& dir, color& color):dir{dir},t{std::numeric_limits<double>::infinity()},ray_color{color}{}
+};
+class hittable{
+  public:
+  virtual bool hit(Ray& ray) = 0;
 
+};
+class sphere : public hittable{
+  point3 center;
+  double r;
+  public:
+  sphere(const point3 &center, double r):center{center},r{r}{}
+  bool hit(Ray &ray) override{
+  {
+    double a = dot(ray.dir, ray.dir);
+    double b = 2*dot((ray.dir - center),ray.dir);
+    double c = dot((ray.dir - center),(ray.dir - center)) - r*r;
+    double Delta = b*b - 4*a*c;
+    double t = (-b - sqrt(Delta)) / (2 * a);
+    vec3 N = (((1+t) * ray.dir) - center) / r;
+    bool rs =Delta > 0 && t > -1; 
+    double tempt = ray.t;
+    ray.t = rs ? t : tempt;
+    if(tempt > ray.t)
+        ray.ray_color =0.5*color(1+N.x(),1+N.y(),1+N.z());
+    return rs;
+  }
 
-
+}
+};
 int main(){
   int image_width = 256;
   int max_value = 255;
@@ -43,42 +78,35 @@ int main(){
   //The viewport is a virtual rectangle in the 3D world that contains the grid of image pixel locations.
   double viewport_height = viewport_width * ((double)image_height/(double)image_width);
   vec3 delta_v_h((viewport_width/(double)image_width), 0, 0);
-  vec3 delta_v_v(0, viewport_height/(double)image_height, 0);
-  point3 viewport_00_loc = camera + vec3(- viewport_width*0.5,- viewport_height*0.5,focal) + 0.5*(delta_v_v + delta_v_h); 
- /* std::cout << "vv " << delta_v_v << '\n';*/
- /* std::cout << "vv " << */
- /*vec3(- viewport_width*0.5,- viewport_height*0.5,focal)*/
- /*<< '\n';*/
- /* std::cout << "00loc " << viewport_00_loc << '\n';*/
- /**/
+  vec3 delta_v_v(0, -viewport_height/(double)image_height, 0);
+  point3 viewport_00_loc = camera + vec3(- viewport_width*0.5, viewport_height*0.5,focal) + 0.5*(delta_v_v + delta_v_h); 
   std::string filename = "image2.ppm";
   std::fstream fstr;
   fstr.open(filename, std::ios::in | std::ios::out);
   assert(fstr.is_open());
   fstr << "P3\n" << image_width << " " << image_height << "\n" << max_value << '\n';
 
-  /*std::vector<int> line(image_height);*/
+  point3 sphere_center(0,0,2);
+  sphere ball(sphere_center,0.5);
+  sphere ground(point3(0,-100.5,1), 100);
   for(int i=0; i < image_height; i ++)
   {
     for(int j=0; j < image_width; j ++)
     {
-      vec3 ray = viewport_00_loc + i * delta_v_v + j * delta_v_h;
-      if(i + j < 5) std::cout << ray << '\n';
-      point3 sphere_center(0,0,2);
-      double r = 0.5;
-      double a = dot(ray , ray);
-      double b = 2*dot((ray - sphere_center),ray);
-      double c = dot((ray - sphere_center),(ray - sphere_center)) - r*r;
-      double Delta = b*b - 4*a*c;
-      double t = (-b - sqrt(Delta)) / (2 * a);
-      vec3 N = (((1+t) * ray) - sphere_center) / r;
-      color color_rainbow = 0.5*color(1+N.x(),1+N.y(),1+N.z());
-      /*std::cout << Delta << " " ;*/
-      double color_blue = abs(ray.y() - viewport_00_loc.y())/viewport_height;
-      if(Delta < 0)
-        write_color(fstr, color(1, 1, color_blue));
-      else 
-        write_color(fstr, color_rainbow);
+      color sampled_color_combine;
+      int sample_num = 10;
+      for(int k =0 ; k < sample_num; k++){
+        int sample = (int)std::floor(rand_double(-0.5, 0.5));
+        /*std::cout << "sample " << sample << " ";*/
+        vec3 ray_dir = viewport_00_loc + std::max(0, i + sample) * delta_v_v + std::max(0,j + sample) * delta_v_h;
+        /*vec3 ray_dir = viewport_00_loc +  i * delta_v_v + j * delta_v_h;*/
+        color color_blue = color(1,1,abs(ray_dir.y() - viewport_00_loc.y())/viewport_height);
+        Ray ray(ray_dir, color_blue);
+        bool hit_sphere = ball.hit(ray);
+        bool hit_ground = ground.hit(ray);
+        sampled_color_combine += ray.ray_color;
+      }
+      write_color(fstr, sampled_color_combine/(double)sample_num);
     }
   }
   std::clog << "\rDone";

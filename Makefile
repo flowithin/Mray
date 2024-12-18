@@ -1,9 +1,15 @@
 CC := clang++
 objects := main.o
 testfile := test.o
+rand := rand.o
 CXXFLAGS := -stdlib=libc++ -std=c++17
+imagefile := image2.ppm
 all: $(objects)
 	$(CC) $^ -o ray
+run: ray
+	./ray
+	open $(imagefile)
+
 
 # Syntax - targets ...: target-pattern: prereq-patterns ...
 # In the case of the first target, foo.o, the target-pattern matches foo.o and sets the "stem" to be "foo".
@@ -15,6 +21,11 @@ test: $(testfile)
 	$(CC) $^ -o test 
 
 $(testfile): %.o: %.cpp
+	$(CC) $(CXXFLAGS) -c $^ -o $@
+
+rand: $(rand)
+	$(CC) $^ -o rand 
+$(rand): %.o: %.cpp
 	$(CC) $(CXXFLAGS) -c $^ -o $@
 
 
