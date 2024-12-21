@@ -10,7 +10,7 @@
 #include <fstream>
 #include "vec3.h"
 #include "rand.h"
-
+#define PI
 using color = vec3;
 using point3 = vec3;
 void write_color(std::ostream& out, const color& pixel_color){
@@ -26,9 +26,10 @@ void write_color(std::ostream& out, const color& pixel_color){
 class Ray{
 public:
   vec3 dir;
+  point3 orig;
   double t;
   color ray_color;
-  Ray(vec3& dir, color& color):dir{dir},t{std::numeric_limits<double>::infinity()},ray_color{color}{}
+  Ray(vec3& dir, color& color,point3 orig = point3(0,0,0)):dir{dir},t{std::numeric_limits<double>::infinity()},ray_color{color},orig{orig}{}
 };
 class hittable{
   public:
@@ -41,22 +42,49 @@ class sphere : public hittable{
   public:
   sphere(const point3 &center, double r):center{center},r{r}{}
   bool hit(Ray &ray) override{
-  {
-    double a = dot(ray.dir, ray.dir);
-    double b = 2*dot((ray.dir - center),ray.dir);
-    double c = dot((ray.dir - center),(ray.dir - center)) - r*r;
-    double Delta = b*b - 4*a*c;
-    double t = (-b - sqrt(Delta)) / (2 * a);
-    vec3 N = (((1+t) * ray.dir) - center) / r;
-    bool rs =Delta > 0 && t > -1; 
-    double tempt = ray.t;
-    ray.t = rs ? t : tempt;
-    if(tempt > ray.t)
-        ray.ray_color =0.5*color(1+N.x(),1+N.y(),1+N.z());
-    return rs;
+    {
+      double a = dot(ray.dir, ray.dir);
+      vec3 relative_center = center - ray.orig;
+      double b = 2*dot((ray.dir - relative_center),ray.dir);
+      double c = dot((ray.dir - relative_center),(ray.dir - relative_center)) - r*r;
+      double Delta = b*b - 4*a*c;
+      double t = (-b - sqrt(Delta)) / (2 * a);
+      vec3 N = (((1+t) * ray.dir) - relative_center) / r;
+      if(Delta > 0 && t > -1 && t < ray.t )
+      {
+        ray.ray_color = 0.5*color(1+N.x(),1+N.y(),1+N.z());
+        ray.t = t;
+      }
+      return Delta > 0 && t > -1;
+    }
   }
-
-}
+};
+class World : public hittable{
+  std::vector<hittable*> world;
+  void add(hittable& h){world.push_back(&h);}
+  bool hit(Ray &ray)override{
+    bool flag=false;
+    double tempt = ray.t;
+    for(hittable* h : world){
+      bool rs = h->hit(ray);
+      flag = flag == false ? rs : true;
+      if(rs && tempt > ray.t)
+      {
+        tempt = ray.t;
+      } 
+    }
+    return flag;
+  }
+  void difuse(Ray &ray){
+    bool flag = true;
+    while(flag){
+      double theta = rand_double(-1, 1);
+      vec3 new_dir = ray.dir - vec3(theta,theta,theta);
+      flag = hit(ray);
+      Ray new_ray(new_dir,ray.ray_color, (1+ray.t)*ray.dir + ray.orig);
+    }
+  }
+  ~World() = default;
 };
 int main(){
   int image_width = 256;
