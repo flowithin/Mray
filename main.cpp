@@ -50,6 +50,7 @@ class sphere : public hittable{
       double Delta = b*b - 4*a*c;
       double t = (-b - sqrt(Delta)) / (2 * a);
       vec3 N = (((1+t) * ray.dir) - relative_center) / r;
+      // TODO: this chunk of code shouldn't be around here
       if(Delta > 0 && t > -1 && t < ray.t )
       {
         ray.ray_color = 0.5*color(1+N.x(),1+N.y(),1+N.z());
@@ -85,6 +86,7 @@ class World : public hittable{
     }
   }
   ~World() = default;
+  //  TODO: implement freeing 
 };
 int main(){
   int image_width = 256;
